@@ -9,27 +9,41 @@
 ;    o   o		  o   o
 ;   / \			     / \
 ;  o   o		    o   o
+;
+;
+;
+; zaznam ve slovniku (8 bajtu):
+;
+; |  0     1  |  2     3  |  4     5  |  6     7  |
+; +-----------+-----------+-----------+-----------+
+; |   pravy   |  Prefix   |    levy   |  V  |  Z  |
+;
+; kde	V = vyvazenost {-2,...,2}
+;	Z = znak
+;
+
 
 
 
 PRUCHOD	.EQU	$5bff		; zasobnik informaci o Pruchodu stromem
 NIL	.EQU	0
-SLO_PL3	.EQU	SLOVNIK+(SLO_MAX*ZAZ_LEN*2)	; Velikost Zaznamu je dvojnasobna
+ZAZ_LEK	.EQU	8		; pocet bajtu jednoho Zaznamu ve Slovniku komprese
+SLOVNIK	.EQU	SLO_PLN+(SLO_MAX*ZAZ_LEK)	; adresa zacatku Slovniku komprese
 
 
 	;ld	hl,0		; boot sektor (zakomentovano protoze nastaveno v nadmodulu)
 	;push	hl		; prvni uspesne zkomprimovany logicky sektor (zakomentovano protoze vlozeno v nadmodulu)
 	;push	hl		; logicky sektor ke kompresi (zakomentovano protoze vlozeno v nadmodulu)
 
-	ld	(_SP+1),sp	; zaloha SP
+	ld	(_SPK+1),sp	; zaloha SP
 
 	ld	b,8		; B = pocet volnych bitu Vystupu
 
 	ld	hl,VYSTUP	; inicializace aktualniho bajtu Vystupu
-	ld	(_ZapisK+1),hl
+	ld	(_VystuK+1),hl
 
 	ld 	hl,SLOVNIK	; inicializace volne pozice ve Slovniku
-	ld	(_Slov+1),hl
+	ld	(_SlovK+1),hl
 
 	ld	h,l		; inicializace Korene stromu (zaruceno H=L=0)
 	ld	(_Koren+1),hl
@@ -38,7 +52,6 @@ SLO_PL3	.EQU	SLOVNIK+(SLO_MAX*ZAZ_LEN*2)	; Velikost Zaznamu je dvojnasobna
 	push	hl
 
 SektorK
-#IFNDEF	__DEBUG__
 	push	bc		; zaloha poctu volnych bitu Vystupu
 
 	call	LOGFYZ		; logicky sektor v HL na fyzickou stopu a sektor v BC
@@ -49,7 +62,7 @@ SektorK
 	.BYTE	36		; barva (zde Paper 4, Ink 4)
 	.BYTE	STP_STA		; adresa
 
-	ld	a,(_ZapisK+2)	; zobrazeni statistiky zaplnenosti Vystupu; A = informace <0;255>
+	ld	a,(_VystuK+2)	; zobrazeni statistiky zaplnenosti Vystupu; A = informace <0;255>
 	sub	VYSTUP>>8
 	call	Statist
 	.BYTE	36		; barva (zde Paper 4, Ink 4)
@@ -63,13 +76,6 @@ SektorK
 	pop	de		; obnova Prefixu
 
 	pop	bc		; obnova poctu volnych bitu Vystupu
-#IFDEF	__EMUL__
-	ld	de,$4400
-	ld	hl,BUFFER
-	ld	bc,512
-	ldir
-#ENDIF
-#ENDIF
 
 	di			; zakazani preruseni (protoze pouzivany stinove registry)
 	xor	a		; Carry=0
@@ -91,7 +97,7 @@ RepeatK	inc	iy		; test konce Buffru
 	.BYTE	$fd		; meni nasledujici instrukci na Ld(A,High(IY))
 	ld	a,h		; Ld(A,High(IY))
 	cp	(BUFFER+512)>>8
-	jp	nc,BufCelK
+	jr	nc,BufCelK
 	ld	c,(iy+0)	; do C Znak z Buffru
 
 	exx
@@ -111,7 +117,7 @@ HledejK	ex	de,hl		; v zasobniku Pruchodu vytvoreni informace o Rodici Zaznamu
 
 	inc	h		; pokud HL'=Nil, Zaznam [AktPrefix,AktZnak] ve Slovniku neexistuje a nutno jej vytvorit
 	dec	h		; nelze Ld(A,H), Or(A) protoze nutno zachovat A
-	jp	z,ZaznamK
+	jr	z,ZaznamK
 
 	ld	sp,hl		; do SP Zaznam ve Slovniku
 	ld	b,h		; do BC' zaloha zacatku Zaznamu
@@ -122,15 +128,15 @@ HledejK	ex	de,hl		; v zasobniku Pruchodu vytvoreni informace o Rodici Zaznamu
 	xor	a
 	sbc	hl,de
 	exx
-	jp	c,HledejK	; Zaznamenany Prefix mensi nez akt. Prefix, hledani v "pravem podstromu"
+	jr	c,HledejK	; Zaznamenany Prefix mensi nez akt. Prefix, hledani v "pravem podstromu"
 	pop	hl		; do HL' "levy podstrom"
 	jp	nz,HledejK	; Zaznamenany Prefix vetsi nez akt. Prefix, hledani v "levem podstromu"
 	exx
 	pop	af		; do A Zaznamenany Znak
 	sub	c
-	jp	z,ShodaK	; Zaznamenany Znak shodny s akt. Znakem
+	jr	z,ShodaK	; Zaznamenany Znak shodny s akt. Znakem
 	exx
-	jp	nc,HledejK	; Zaznamenany Znak --vetsi-- nez akt. Znak, hledani v --"levem podstromu"--
+	jr	nc,HledejK	; Zaznamenany Znak --vetsi-- nez akt. Znak, hledani v --"levem podstromu"--
 	ld	h,b
 	ld	l,c
 	ld	sp,hl
@@ -138,13 +144,13 @@ HledejK	ex	de,hl		; v zasobniku Pruchodu vytvoreni informace o Rodici Zaznamu
 	jp	HledejK		; Zaznamenany Znak --mensi-- nez akt. Znak, hledani v --"pravem podstromu"--
 
 ShodaK				; ve Slovniku nalezen Zaznam [AktPrefix,AktZnak] - pouziti Zaznamu jako aktualniho Prefixu (a pokus o jeho rozsireni dalsim znakem)
-	ld	hl,-8
+	ld	hl,-ZAZ_LEK
 	add	hl,sp
 	ex	de,hl
 	jp	RepeatK
 
 BufCelK				; cely Buffer zpracovan
-	ld	a,$21		; zmena instrukce Jp(nc,...) na "neskodnou" Ld(Hl,...)
+	ld	a,$21		; zmena instrukce Jp(...) na "neskodnou" Ld(Hl,...)
 	ld	(_BuffOk),a
 	xor	a
 	jp	_Vyst3K		; zapis aktualniho Prefixu na Vystup
@@ -152,47 +158,33 @@ BufCelK				; cely Buffer zpracovan
 
 SloPlnK				; vyprazdneni plneho Seznamu a Slovniku
 	ld 	hl,SLOVNIK	; inicializace volne pozice ve Slovniku
-	ld	(_Slov+1),hl
-	;ld	hl,NIL		; inicializace Korene stromu
-	ld	h,a		; H=L=A=0		
-	;ld	l,a		; zakomentovano protoze L=A=0 zaruceno jiz z HL=Slovnik vyse
-	ld	(_Koren+1),hl
-	jp	_Vyst3K		; zaruceno A=0
-
+	ld	(_SlovK+1),hl
+	ld	h,l		; H=L=0 (L=0 zaruceno jiz z HL=Slovnik vyse)
 KorenK	ld	(_Koren+1),hl	; nastaveni Korene stromu
 	xor	a
 	jp	_Vyst2K
 
-KorenDE	ld	(_Koren+1),de
-	jp	_ZazVyv
-
 
 ZaznamK	exx			; ve Slovniku vytvoreni Zaznamu [AktPrefix,AktZnak]
-_Slov	ld	hl,$0000	; do HL volna pozice ve Slovniku ($0000 = urceno za behu)
-	ex	af,af'		; do A' zaloha specifickych informaci o Rodici
-	ld	a,h		; zaplnen-li Slovnik, vyprazdneni
-	sub	SLO_PL3>>8
-	jp	z,SloPlnK
-	ld	a,l		; urceni dalsi volne pozice ve Slovniku
-	or	7
-	ld	l,a
-	inc	hl
-	ld	(_Slov+1),hl
-	ld	sp,hl		; vytvoreni Zaznamu
-	ld	h,c		; Zaznamenani Znaku v H a Vyvazenosti v L
+_SlovK	ld	sp,$0000	; do SP volna pozice ve Slovniku ($0000 = urceno za behu)
+	ld	h,c		; Zaznamenani Znaku v H a Vyvazenosti=0 v L
 	ld	l,0
 	push	hl
 	ld	h,l		; H=L=0
 	push	hl		; Zaznamenani "leveho podstromu" (=Nil)
 	push	de		; Zaznamenani Prefixu
 	push	hl		; zaznamenani "praveho podstromu" (=Nil)
-
+	ex	af,af'		; do A' zaloha specifickych informaci o Rodici
 	exx
+
 	;ld	hl,NIL		; zakomentovano protoze HL'=Nil zaruceno
 	add	hl,sp
+	bit	6,h		; zaplnen-li Slovnik, vyprazdneni (6.bit=0 = H'<High(SLO_PLN)=$40 )
+	jr	z,SloPlnK
+	ld	(_SlovK+1),hl	; urceni dalsi volne pozice ve Slovniku
 	inc	b		; neexistuje-li pro Zaznam Rodic (nastaven v BC'), jedna se o Koren stromu
 	dec	b
-	jp	z,KorenK
+	jr	z,KorenK
 	ex	de,hl		; do DE' nove vytvoreny Zaznam
 	ld	sp,hl		; do SP zasobnik Pruchodu stromem
 	dec	l		; v zasobniku Pruchodu zaznamenani nove vytvoreneho Zaznamu (pro pripad ze nize nutna dvojita rotace)
@@ -203,13 +195,14 @@ _Slov	ld	hl,$0000	; do HL volna pozice ve Slovniku ($0000 = urceno za behu)
 	ld	(hl),e
 	pop	hl		; do HL' Rodic Zaznamu (plati HL'=BC'=Rodic)
 	ex	af,af'		; do A obnova specifickych informaci o Rodici
-	jp	c,_ZazRod	; je-li Zaznam soucasti "praveho podstromu" Rodice, skoc
+	jr	c,_ZazRod	; je-li Zaznam soucasti "praveho podstromu" Rodice, skoc
 	set	2,l		; Zaznam soucasti --"leveho podstromu"-- Rodice, pricti 4
 _ZazRod	ld	(hl),e		; pridani Zaznamu do Rodice
 	inc	l
 	ld	(hl),d
 	;ld	l,c		; aby v HL' zacatek Rodice Zaznamu (zakomentovano protoze L' nize dale upraveno)
 	;ld	b,...		; do B' Vyvazenost Zaznamu (zakomentovano protoze novy Zaznam nikdy neuvede bezprostredniho Rodice do netolerantni NeVyvazenosti)
+
 
 OvlivnK				; ovlivneni Vyvazenosti Rodice HL' Zaznamem DE' (v B' Vyvazenost Zaznamu)
 	ld	a,c		; ovlivneni Vyvazenosti Rodice ukazovaneho HL' jako (HL'+6)+=A
@@ -224,23 +217,20 @@ OvlivnK				; ovlivneni Vyvazenosti Rodice HL' Zaznamem DE' (v B' Vyvazenost Zazn
 	ld	l,c		; z C' obnova Low(Rodic)
 	bit	0,a
 	ex	de,hl		; do DE' Rodic (stava se Zaznamem), do HL' Zaznam (nize nahrazen rodicem Rodice)
-	jp	z,RotaceK	; je-li Vyvazenost Zaznamu {2,-2}, nulty bit je vzdy roven 0 a Rodic je v netolerovane NeVyvazenosti
+	jr	z,RotaceK	; je-li Vyvazenost Zaznamu {2,-2}, nulty bit je vzdy roven 0 a Rodic je v netolerovane NeVyvazenosti
 	ld	b,a		; do B' Vyvazenost Zaznamu
 	pop	hl		; do HL' Rodic ze zasobniku Pruchodu stromem
-	inc	h
-	dec	h
+	xor	a
+	or	h
 	ld	c,l		; do C' zaloha Low(Rodic)
 	jp	nz,OvlivnK
-	xor	a
-	jp	_Vyst2K		; zadny dalsi Rodic
+	jp	_Vyst2K		; zadny dalsi Rodic (zaruceno A=0)
 
 _RotDvo				; dokonceni Dvojite Rotace (provedenim "vnejsi" jednoduche Rotace)
-	dec	l		; do HL' zacatek Rodice
-	res	2,l
+	ld	l,b		; obnova Low(Rodic)
 	ex	de,hl		; do HL' Zaznam, do DE' Rodic
 	ccf			; "vnejsi" rotace opacny smer nez "vnitrni" rotace
-	ld	a,1		; A=1-1=0 = po provedeni "vnejsi" rotace netreba zadnou dalsi rotaci
-	dec	a
+	bit	7,h		; aby Zero=1 (zaruceno H'<$7F) = po provedeni "vnejsi" rotace netreba zadnou dalsi rotaci
 	jp	_RotJed
 
 RotaceK				; Rodic DE' je v netolerovane NeVyvazenosti A={2,-2} (v HL' Zaznam, v B' Vyvazenost Zaznamu HL')
@@ -257,67 +247,67 @@ RotDvoj				; nutna dvojita Rotace - urceni smeru
 RotJedn				; nutna jednoducha Rotace
 	rra			; protoze 0.bit vzdy =1
 	srl	a		; urceni smeru Rotace
-_RotJed	jp	nc,Rot_LL
-
-Rot_RR	ex	af,af'		; nutna Rotace RR (v HL' Zaznam, v DE' Rodic)
-	set	2,e		; "pravy podstrom" Zaznamu HL' musi "levym podstromem" Rodice DE'
-	ldi
-	ld	a,(hl)
-	ld	(de),a
-	rlca			; do B': 1 <=> Zaznam HL' ma "pravy podstrom", 0 <=> jinak
-	rlca
-	and	1
-	ld	b,a
-	ld	(hl),d		; Rodic jako "pravy podstrom" Zaznamu
-	dec	l
-	dec	e
-	res	2,e
-	ld	(hl),e
-	ex	de,hl		; do DE' Zaznam, do HL' Rodic
-	inc	l		; do A: "-1" <=> Rodic HL' ma "pravy podstrom", 0 <=> jinak
-	xor	a
-	cp	(hl)
-	sbc	a,a
-	add	a,b		; urceni a nastaveni Vyvazenosti Rodice DE'
-	set	2,l
-	inc	l
-	jp	_RodVyv
+_RotJed
+	ld	b,e		; do B' zaloha Low(Rodic)
+	ld	c,l		; do C' zaloha Low(Zaznam)
+	inc	bc		; BC'++ protoze nize provadeno Ldi (a to BC'--) (nelze Inc(C) protoze nutno zachovat Zero)
+	jr	c,Rot_RR
 
 Rot_LL	ex	af,af'		; nutna Rotace LL (v HL' Zaznam, v DE' Rodic)
 	set	2,l		; "levy podstrom" Zaznamu HL' musi "pravym podstromem" Rodice DE'
 	ldi
 	ld	a,(hl)
 	ld	(de),a
-	rlca			; do B': "-1" <=> Zaznam HL' ma "levy podstrom", 0 <=> jinak
-	rlca
-	sbc	a,a
-	ld	b,a
-	ld	(hl),d		; Rodic jako "levy podstrom" Zaznamu
+	ld	(hl),d		; Rodic DE' jako "levy podstrom" Zaznamu HL'
 	dec	l
-	dec	e
-	ld	(hl),e
-	res	2,l		; obnova zacatku Zaznamu HL'
+	ld	(hl),b
 	ex	de,hl		; do DE' Zaznam, do HL' Rodic
-	set	2,l		; do A: 1 <=> Rodic HL' ma "levy podstrom", 0 <=> jinak
-	inc	l
-	xor	a
+	rlca			; do A: 1 <=> Rodic HL' ma "pravy podstrom", 0 <=> jinak
+	rlca
+	and	1
+	set	2,l		; A -= ( 1 <=> Rodic HL' ma "levy podstrom", 0 <=> jinak )
 	cp	(hl)
-	adc	a,b		; urceni a nastaveni Vyvazenosti Rodice HL'
-	inc	l
-_RodVyv	ld	(hl),a
+	sbc	a,0
+	neg			; A=-A
+	jp	_RodVyv
+
+KorenDE	ld	(_Koren+1),de
+	jp	_ZazVyv
+
+Rot_RR	ex	af,af'		; nutna Rotace RR (v HL' Zaznam, v DE' Rodic)
+	set	2,e		; "pravy podstrom" Zaznamu HL' musi "levym podstromem" Rodice DE'
+	ldi
+	ld	a,(hl)
+	ld	(de),a
+	ld	(hl),d		; Rodic DE' jako "pravy podstrom" Zaznamu HL'
+	dec	l
+	ld	(hl),b
+	ex	de,hl		; do DE' Zaznam, do HL' Rodic
+	rlca			; do A: 1 <=> Rodic HL' ma "levy podstrom", 0 <=> jinak
+	rlca
+	and	1
+	res	2,l		; A -= ( 1 <=> Rodic HL' ma "pravy podstrom", 0 <=> jinak )
+	cp	(hl)
+	sbc	a,0
+	set	2,l
+
+_RodVyv	inc	l		; urceni a nastaveni Vyvazenosti Rodice HL'
+	ld	(hl),a
+	ld	e,c		; obnova Low(Zaznam)
 	pop	hl		; do HL' Nadrodic (tj. rodic Rodice) (v DE' Zaznam)
 	ld	a,h
 	or	a
-	jp	z,KorenDE
+	jr	z,KorenDE
 	pop	af		; do A specificke informace o Rodici
 	or	a
-	jp	m,_NadRod	; ma-li Zaznam soucasti "praveho podstromu" Nadrodice, skoc
+	ld	b,l		; do B' zaloha Low(Nadrodic) (pro pripad ze nutna Dvojita rotace)
+	jr	nz,_NadRod	; ma-li Zaznam soucasti "praveho podstromu" Nadrodice, skoc
 	set	2,l		; Zaznam soucast --"leveho podstromu"-- Nadrodice, pricti 4
 _NadRod	ld	(hl),e		; Zaznam DE' jako "pravy/levy podstrom" Nadrodice HL'
 	inc	l
 	ld	(hl),d
 	ex	af,af'		; rozhodnuti zda nutna Dvojita rotace
-	jp	nz,_RotDvo
+	jr	nz,_RotDvo
 
 _ZazVyv	ld	a,e		; nulovani Vyvazenosti Zaznamu HL'
 	or	6
@@ -331,8 +321,8 @@ _ZazVyv	ld	a,e		; nulovani Vyvazenosti Zaznamu HL'
 
 _Vyst2K	exx
 _Vyst3K	or	d		; (zaruceno A=0) do A horni bajt Prefixu, tj. A=D=High(Prefix)
-	jp	z,_ZapisK	; prefixem je Ascii znak
-	sub	SLOVNIK>>8	; A-=High(Slovnik) (protoze Slovnik na adrese $xx00)
+	jp	z,_VystuK	; prefixem je Ascii znak
+	sub	SLO_PLN>>8	; A-=High(SLO_PLN) (protoze zarovnani Slovniku na $xx00)
 	rra			; zaruceno Carry=0
 	rr	e
 	rra	
@@ -340,7 +330,7 @@ _Vyst3K	or	d		; (zaruceno A=0) do A horni bajt Prefixu, tj. A=D=High(Prefix)
 	rra	
 	rr	e
 	inc	a		; symbol ma kod "za" Ascii
-_ZapisK	ld	hl,$0000	; do HL ukaz volne pozice Vystupu ($0000 = urceno za behu)
+_VystuK	ld	hl,$0000	; do HL ukaz volne pozice Vystupu ($0000 = urceno za behu)
 	ld	d,b		; do D pocet volnych bitu Vystupu
 	ld	b,N_BITU	; zapis nBitu symbolu na Vystup
 _Zap1K	rra
@@ -350,11 +340,11 @@ _Zap1K	rra
 	jp	nz,_Zap2K
 	inc	hl		; dalsi bajt Vystupu
 	inc	h		; test zaplnenosti Vystupu
-	jp	z,KonecK	; zaplnen-li Vystup, konec (Carry=0)
+	jr	z,KonecK	; zaplnen-li Vystup, konec (Carry=0)
 	dec	h
 	ld	d,8
 _Zap2K	djnz	_Zap1K
-	ld	(_ZapisK+1),hl	; uchovani ukaz volne pozice Vystupu
+	ld	(_VystuK+1),hl	; uchovani ukaz volne pozice Vystupu
 	ld	b,d		; do B zpet pocet volnych bitu Vystupu
 	ld	d,0		; aktualni Znak prefixem dalsiho znaku (D=0, E=C)
 	ld	e,c
@@ -362,21 +352,20 @@ _BuffOk	jp	RepeatK		; opcode instrukce po zpracovani celeho Buffru zmenen z Jp(.
 	ld	a,$c3		; uprava opcodu instrukce BuffOk z Ld(Hl,...) zpet na Jp(...)
 	ld	(_BuffOk),a
 
-_SP	ld	sp,$0000	; obnova SP ($0000 = urceno za behu)
+_SPK	ld	sp,$0000	; obnova SP ($0000 = urceno za behu)
 __NSekt	ld	hl,$0000	; do HL pocet sektoru na diskete ($0000 = urceno za behu)
 	pop	de
 	inc	de
 	push	de
 	xor	a
 	sbc	hl,de
-	ld	h,d		; do HL pripadny dalsi sektor
-	ld	l,e
+	ex	de,hl		; do HL pripadny dalsi sektor
 	jp	nz,SektorK	; zpracovany-li vsechny sektory, komprese hotova
 
 	inc	a		; A=1, tj. cela disketa zpracovana (zaruceno ze predtim A=0)
 	ld	(_Hotovo+1),a
-	ld	hl,(_ZapisK+1)	; do HL ukaz volne pozice Vystupu
+	ld	hl,(_VystuK+1)	; do HL ukaz volne pozice Vystupu
 _FifoK	rr	(hl)		; rolovani fifo aby na nejnizsim bitu prvni zapsany bit
 	djnz	_FifoK
 
-KonecK	ld	sp,(_SP+1)	; obnova SP (v pripade ze Buffer plny)
+KonecK	ld	sp,(_SPK+1)	; obnova SP (v pripade ze Buffer plny)

@@ -4,25 +4,23 @@
 
 ADRDRAM	.EQU	AUXBUF		; adresa v DRAM kam utilita z obrazovky presunuta aby udelala prostor pro Slovnik
 
-#DEFINE	__DEBUG__0		; testovaci verze
-#DEFINE	__EMUL__0		; verze ktera urcena pro emulator
+#DEFINE	__DEBUG__0		; testovaci verze pro emulator
 
 BOR_SRC	.EQU	4		; barva Borderu pro signalizaci vlozeni zdrojove diskety
 BOR_TRG	.EQU	6		; 					cilove
 BOR_PAR	.EQU	5		; 				potvrzeni parametr('u) zdrojove diskety
 
 N_BITU	.EQU	10		; pocet bitu komprimovaneho symbolu
-ZAZ_LEN	.EQU	4		; pocet bajtu jednoho zaznamu ve Slovniku (nelze 8 kvuli zpetne kompatibilite Unlzw)
-SLOVNIK	.EQU	$4000
 SLO_MAX	.EQU	((1 << (N_BITU-8))-1)*256	; max pocet zaznamu ve Slovniku
-SLO_PLN	.EQU	SLOVNIK+(SLO_MAX*ZAZ_LEN)	; adresa konce Slovniku
+SLO_PLN	.EQU	$4000		; adresa konce Slovniku komprese
 VYSTUP	.EQU	$5d00
 VYS_PLN	.EQU	$ff00
 VYS_STA	.EQU	$21		; zacatek zobrazeni statistiky zaplnenosti Buffru v atributove casti obrazovky ($5800+xx)
 STP_STA	.EQU	$61		; zacatek zobrazeni statistiky zpracovanosti stop v atributove casti obrazovky ($5800+xx)
+BUFFER	.EQU	$3800		; (DIRBUF) Buffer na adrese jejiz dolni bajt nulovy (tj. XX00)
 
-	; na adrese SrcSekt mozno pretizit informaci o poctu sektoru na jedne stope zdrojove diskety (0 = hodnota v bootu zdrojove diskety je validni)
-	; na adrese SrcSekt-1 mozno pretizit informaci o poctu sektoru na jedne stope cilove diskety (vychozi hodnotou je zde 9, viz Dsk80x9)
+	; na adrese SrcStop mozno pretizit informaci o poctu stop na zdrojove diskete (0 = pouzita hodnota z bootu zdrojove diskety)
+	; na adrese SrcStop-1 mozno pretizit informaci o poctu sektoru na jedne stope cilove diskety (vychozi hodnotou je zde 9, viz Dsk80x9)
 
 	.ORG ADRDRAM
 
@@ -31,7 +29,6 @@ STP_STA	.EQU	$61		; zacatek zobrazeni statistiky zpracovanosti stop v atributove
 	push	bc
 	push	de
 
-#IFNDEF	__DEBUG__
 	ld	a,79		; prestrankovani do DROM (viz ZX Magazin 6/93, str. 17)
 	ld	hl,$3ef7	; provedeni ekvivalentu Poke #247,79 prostrednictvim zapisu 79 do fiktivniho sekvencniho souboru zacinajiciho na adrese #247 = 16119 = $3ef7
 	push	hl
@@ -44,12 +41,6 @@ STP_STA	.EQU	$61		; zacatek zobrazeni statistiky zpracovanosti stop v atributove
 	rst	00		; prestrankovani
 	pop	hl
 	pop	hl
-#ELSE
-	ld	hl,$a000
-	ld	de,BUFFER
-	ld	bc,N_SEKT*512
-	ldir
-#ENDIF
 
 	call	Presun+(16384-ADRDRAM)	; kopie utility z obrazovky do DRAM (aby odpovidaly adresy volani rutin)
 
@@ -57,9 +48,10 @@ STP_STA	.EQU	$61		; zacatek zobrazeni statistiky zpracovanosti stop v atributove
 Lzw	push	hl		; prvni uspesne zkomprimovany logicky sektor (predpoklad)
 	push	hl		; logicky sektor ke kompresi
 
-#IFNDEF	__DEBUG__
+#IFNDEF __DEBUG__
 	ld	a,BOR_SRC	; signalizace vlozeni zdrojove diskety
 	call	DskZmen		; nutno "+(.)" protoze PC odvozen od ORG (a ukazuje do DRAM) a rutina DskZmen je (zatim) na obrazovce
+#ENDIF
 
 	pop	hl
 	push	hl
@@ -69,33 +61,39 @@ Lzw	push	hl		; prvni uspesne zkomprimovany logicky sektor (predpoklad)
 
 	call	GETPAR		; do IX tabulka parametru, nacteni Bootu do $3a00(AUXBUF) = Buffer a naplneni tabulky ukazovane IX parametry vlozeneho disku
 
-	ld	a,(SrcSekt+(16384-ADRDRAM))	; pretizeni informace o poctu sektoru na jedne stope zdrojove diskety ziskaneho z jejiho bootu (0 = hodnota v bootu zdrojove diskety je validni)
+	ld	hl,DRPAR_A+1	; pretizeni informace o 40-ti stope diskete v 80-ti stope mechanice
+	res	5,(hl)
+	inc	l
+	ld	a,(SrcStop+(16384-ADRDRAM))	; pretizeni informace o poctu stop na zdrojove diskete (0 = pouzita hodnota z bootu zdrojove diskety)
 	or	a
-	jr	z,Boot		; 0 = hodnota v bootu zdrojove diskety je validni
-	ld	(DRPAR_A+3),a
+	jr	z,Boot		; 0 = pouzita hodnota v bootu zdrojove diskety
+	ld	(hl),a
 
-Boot	call	DSKSTP		; zastaveni mechaniky
+Boot	push	hl
+	call	DSKSTP		; zastaveni mechaniky
 	xor	a		; otevreni tiskoveho kanalu 0
 	rst	28
 	.WORD	CHAN_OPEN
-	ld	a,(DRPAR_A+2)	; zobrazeni rozpoznaneho poctu stop na zdrojove diskete
+	pop	hl
+	ld	a,(hl)		; zobrazeni rozpoznaneho poctu stop na zdrojove diskete ve formatu "TTxSS"
+	inc	l
 	call	ByteHex+(16384-ADRDRAM)	; nutno "+(.)" aby volana rutina na obrazovce protoze cast utility byla v DRAM prepsana boot sektorem diskety
 	ld	a,'x'		; aby zobrazeno "TTxSS"
 	rst	10
-	ld	a,(DRPAR_A+3)	; zobrazeni rozpoznaneho poctu sektoru na stopu
+	ld	a,(hl)		; zobrazeni rozpoznaneho poctu sektoru na stopu
 	call	ByteHex+(16384-ADRDRAM)	; nutno "+(.)" aby volana rutina na obrazovce protoze cast utility byla v DRAM prepsana boot sektorem diskety
 
-	xor	a		; urceni celkoveho poctu sektoru na diskete jako Strany*Stopy*Sektory
-	ld	hl,AUXBUF+177
+	ld	hl,AUXBUF+177	; urceni celkoveho poctu sektoru na diskete jako Strany*Stopy*Sektory
 	bit	4,(hl)		; nemeni Carry, pouze nastavuje Zero
-	inc	hl
+	inc	hl		; nelze Inc(L) protoze nutno zachovat Zero
 	ld	e,(hl)		; do E pocet stop
-	inc	hl
+	inc	hl		; nelze Inc(L) protoze nutno zachovat Zero
 	ld	l,(hl)		; do L pocet sektoru
 	jr	z,_Nasob
 	rl	e
-_Nasob	ld	d,a		; D=H=A=0
-	ld	h,d
+_Nasob	xor	a
+	ld	d,a		; D=H=A=0
+	ld	h,a
 	push	de		; uchovani poctu stop pro vytvoreni statistiky jejich zpracovanosti nize
 	rst	28
 	.WORD	HLMULDE		; ZX ROM rutina pro nasobeni HL*=DE
@@ -104,6 +102,7 @@ _Nasob	ld	d,a		; D=H=A=0
 	call	Presun+(16384-ADRDRAM)	; kopie utility z obrazovky do DRAM (aby odpovidaly adresy volani rutin)
 	jp	$+3		; nelze "$+3-(16384-ADRDRAM)" protoze aktualni PC jiz odvozen od ORG a tedy ukazuje do DRAM
 
+#IFNDEF __DEBUG__
 	ld	a,BOR_PAR	; signalizace pozadavku potvrzeni rozpoznaneho formatu zdrojove diskety
 	call	DskZmen
 	ld	a,(LASTKEY)	; nestisknuto-li P (tj. nepotvrzeny-li rozpoznane parametry zdrojove diskety), Konec
@@ -111,6 +110,9 @@ _Nasob	ld	d,a		; D=H=A=0
 	ld	(_Hotovo+1),a	; LastKey<>P -> Hotovo=1
 	pop	bc		; do BC pocet stop (vyuzito nize pri vytvoreni statistiky zpracovanosti stop)
 	jp	nz,Konec
+#ELSE
+	pop	bc		; do BC pocet stop (vyuzito nize pri vytvoreni statistiky zpracovanosti stop)
+#ENDIF
 
 	;pop	bc		; vytvoreni statistiky zpracovanosti stop; A = informace <0;255> ; (zakomentovano protoze provedeno vyse)
 	ld	a,c
@@ -124,52 +126,24 @@ _Nasob	ld	d,a		; D=H=A=0
 	.BYTE	VYS_STA		; adresa
 
 BootOk	call	DRVSYS		; do IX tabulka parametru
-#ENDIF
+
 #include "lzw.asm"
-#IFNDEF	__DEBUG__
+
 	call	SwapPar		; zastaveni mechaniky a prohozeni aktualnich informaci o diskete a mechanice s informacemi o cilove diskete 80x9
-#ENDIF
 
-#IFDEF	__EMUL__
-#IFDEF	__DEBUG__
-;	ld	hl,REZERVA
-;	ld	de,BUFFER
-;	or	a
-;	sbc	hl,de
-;	ld	b,l
-;	ld	hl,BUFFER
-;Smaz1	ld	(hl),255
-;	inc	hl
-;	djnz	Smaz1
-
-	ld	hl,SLO_PLN
-	ld	de,SLOVNIK
-	or	a
-	sbc	hl,de
-	ex	de,hl
-	ld	b,0
-Smaz2	ld	(hl),b
-	inc	hl
-	dec	de
-	ld	a,d
-	or	e
-	jr	nz,Smaz2
-#ENDIF
-#ENDIF
 	pop	hl		; v zasobniku prohozeni logickeho sektoru ke kompresi a prvniho uspesne zkomprimovaneho logickeho sektoru
 	ex	(sp),hl
 	push	hl
 
-
+#IFNDEF __DEBUG__
 	ld	a,BOR_TRG	; signalizace vlozeni cilove diskety
 	call	DskZmen
-#IFNDEF	__DEBUG__
+#ENDIF
 	call	DRVSYS		; do IX tabulka parametru disku
-#ENDIF
+
 #include "unlzw.asm"
-#IFNDEF	__DEBUG__
+
 	call	SwapPar		; zastaveni mechaniky a prohozeni aktualnich informaci o diskete a mechanice s informacemi o zdrojove diskete
-#ENDIF
 
 Konec	pop	hl		; obnova SP
 	pop	hl
@@ -177,9 +151,7 @@ _Hotovo	ld	a,$00		; opakovani cyklu Komprese-Dekomprese pro zbyvajici sektory ($
 	or	a
 	jp	z,Lzw
 
-#IFNDEF	__DEBUG__
-
-	ld	a,2*100		; zruseni statistiky zpracovanosti stop; B = pocet zpracovanych stop, A = informace <0;255>
+	ld	a,2*100		; zruseni statistiky zpracovanosti stop; A = informace <0;255>
 	call	Statist
 	.BYTE	56		; barva (zde Paper 7, Ink 0)
 	.BYTE	STP_STA		; adresa
@@ -187,7 +159,6 @@ _Hotovo	ld	a,$00		; opakovani cyklu Komprese-Dekomprese pro zbyvajici sektory ($
 	ld	de,16384	; presun utility zpet na obrazovku
 	ld	hl,ADRDRAM
 	call	_Presun
-#ENDIF
 
 	pop	de		; obnoveni puvodnich stinovych registr('u)
 	pop	bc
@@ -239,7 +210,7 @@ _Prohod	ld	a,(de)
 	ld	(hl),a
 	ld	a,c
 	ld	(de),a
-	inc	hl
+	inc	l
 	inc	de
 	djnz	_Prohod
 	jp	DSKSTP		; return
@@ -259,7 +230,7 @@ Statist	pop	hl		; zobrazeni statistiky; A = informace <0;255>
 	inc	hl
 	ld	d,$58
 _Statis	ld	(de),a		; vykresleni statistiky
-	inc	de
+	inc	e
 	djnz	_Statis
 	pop	de
 	pop	bc
@@ -287,18 +258,7 @@ _Presun	ld	bc,1024
 	ret
 
 Dsk80x9	.BYTE	129,24,80,9	; informace o diskete 80x9 v mechanice A
-SrcSekt	.BYTE	0		; pretizeni informace o poctu sektoru na jedne stope zdrojove diskety (0 = hodnota v bootu zdrojove diskety je validni)
+SrcStop	.BYTE	0		; pretizeni informace o poctu stop na zdrojove diskete (0 = pouzita hodnota z bootu zdrojove diskety)
 
-
-#IFDEF	__DEBUG__
-;	.ORG	$4200		; Buffer na adrese jejiz v jehoz hornim bajtu jsou dolni dva bity nulove (tj. XX00)
-;BUFFER	.FILL	$600,0
-;REZERVA	.BYTE	255	; visualni znacka konce Buffru
-;REZERVA	.EQU	$4400
-BUFFER	.EQU	$8000
-REZERVA	.EQU	BUFFER+512
-#ELSE
-BUFFER	.EQU	$3800		; (AUXBUF) Buffer na adrese jejiz dolni bajt nulovy (tj. XX00)
-#ENDIF
 
 	.END
