@@ -21,7 +21,6 @@ VYS_PLN	.EQU	$ff00
 VYS_STA	.EQU	$21		; zacatek zobrazeni statistiky zaplnenosti Buffru v atributove casti obrazovky ($5800+xx)
 STP_STA	.EQU	$61		; zacatek zobrazeni statistiky zpracovanosti stop v atributove casti obrazovky ($5800+xx)
 
-
 	; na adrese SrcSekt mozno pretizit informaci o poctu sektoru na jedne stope zdrojove diskety (0 = hodnota v bootu zdrojove diskety je validni)
 	; na adrese SrcSekt-1 mozno pretizit informaci o poctu sektoru na jedne stope cilove diskety (vychozi hodnotou je zde 9, viz Dsk80x9)
 
@@ -179,6 +178,7 @@ _Hotovo	ld	a,$00		; opakovani cyklu Komprese-Dekomprese pro zbyvajici sektory ($
 	jp	z,Lzw
 
 #IFNDEF	__DEBUG__
+
 	ld	a,2*100		; zruseni statistiky zpracovanosti stop; B = pocet zpracovanych stop, A = informace <0;255>
 	call	Statist
 	.BYTE	56		; barva (zde Paper 7, Ink 0)
