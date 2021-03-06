@@ -1,0 +1,283 @@
+<html>
+<head><meta http-equiv=Content-Type content=text/html;charset=windows-1250>
+<link rel=stylesheet type=text/css href=faq.css></head>
+<body>
+<h2>Changelog</h2>
+
+<!--
+<h3></h3>
+<ul>	<li></li>
+	<li></li>
+</ul>
+-->
+
+<h3>1.4.3 RC2 (May 12, 2018)</h3>
+<ul>	<li>added dialog to manually adjust the disk/image recognition sequence (i.e., order of DOSes that get crack on the image), under <i>Image &#8594; Recognition</i></li>
+	<li>added possibility to recover also erroneous sector ID during dumping</li>
+	<li>changed determination of free space on a TRDOS image/disk (now based on the <i>First empty sector</i> information from the boot, instead of on information from directory; new approach allows to tweak the file system)</li>
+	<li>added pressing <i>Enter</i> key in the hexa-editor passes the focus to its previous owner</li>
+	<li>added support to export ZX Spectrum files with characters that are forbidden in FAT32 and higher (e.g., <i>"Name%AT <> STOP ;o).P"</i>); some limitations still hold</li>
+	<li>fixed importing of TRDOS files (first, when they lack export information, and second, physical addressing of sectors)</li>
+	<li>removed possibility to accept some i/o errors (e.g., data CRC) when dumping to a raw image; only <i>Retry</i> and almighty <i>Abort</i> are offered</li>
+	<li>added support for high-DPI screens; everything but <i>PropertyGrid</i> should now be laid out well regardless the Windows zoom factor</li>
+</ul>
+
+<h3>1.4.3 RC1 (Apr 20, 2018)</h3>
+<ul>	<li>modified the disk/image recognition sequence (swapped the positions of TRDOS and GDOS)</li>
+	<li>fixed physical numbering of TRDOS sectors</li>
+</ul>
+
+<h3>1.4.2 (Apr 2, 2018)</h3>
+<ul>	<li>added "context help" (effectively just links to on-line FAQs available through the <i>"Need help?"</i> hyperlink in the left lower corner of selected dialogs)</li>
+	<li>added the <i>Allow zero-length files</i> switch for GDOS files (to tweak the file system)</li>
+	<li>added suggestion to open the FAQs when the application is first launched</li>
+	<li>fixed track verification error message (stack-allocated buffer overflow)</li>
+	<li>updated on-line FAQs</li>
+</ul>
+
+<h3>1.4.1 (Mar 24, 2018)</h3>
+<ul>	<li>fixed inclusion of "skipped" sectors to disk statistics, under <i>Track Map &#8594; Helpers &#8594; Statistics</i></li>
+	<li>fixed interruption of automatic internal floppy drive latency determination (using the <i>Cancel</i> button)</li>
+	<li>fixed MS-DOS long file names removal</li>
+	<li>fixed filling of MS-DOS empty directory entries (and recurrently in subdirectories)</li>
+	<li>improved filling of MDOS, TRDOS, and GDOS empty directory entries</li>
+	<li>fixed marking of MS-DOS sectors as "dirty"</li>
+	<li>fixed importing of zero-length GDOS files (to tweak the file system)</li>
+	<li>fixed closing of the application when only the ZX Spectrum tape is modified</li>
+	<li>fixed importing of files between various ZX platforms</li>
+	<li>fixed addressing of GDOS sectors when the format is not 80x10 (e.g., is 27x10)</li>
+	<li>fixed MS-DOS disk/image initialization</li>
+	<li>added question to dump cylinders that are beyond the official format into a raw image</li>
+	<li>added possibility to set default MDOS file attributes if imported files have no explicit export information</li>
+	<li>updated on-line FAQs</li>
+	<li><b>changed name to "Real and Imaginary Disk Editor"</b></li>
+</ul>
+
+<h3>1.4 (Feb 2, 2018)</h3>
+<ul>	<li>improved scheme on reporting file size</li>
+	<li>added support for MGT images</li>
+	<li>added GDOS implementation (but UniDOS is currently not supported)</li>
+	<li>improved ZX Spectrum file export information (motivation: <a href="http://zx-dev-conversions.proboards.com/thread/20/bobby-carrot">Bobby Carrot</a>)</li>
+	<li>fixed deletion in hexa-editor if content to delete selected "from end towards beginning"</li>
+	<li>fixed opening of read-only images (e.g., from a CD-ROM)</li>
+	<li>fixed marking of TRDOS sectors as "dirty"</li>
+	<li>fixed the ellipsis button in <i>PropertyGrid</i></li>
+</ul>
+
+<h3>1.3.7 (Oct 22, 2017)</h3>
+<ul>	<li>fixed deletion of MS-DOS directories that occupy two or more clusters</li>
+	<li>improved TRDOS and MS-DOS robustness if their key sectors not found</li>
+	<li>added <i>Motor off</i> and <i>Prefer relative seeking</i> parameters the the internal floppy setting dialog (<a href="faq_fddCalibration.html">see why</a>)</li>
+	<li>added the <i>File Manager &#8594; Selection &#8594; Properties</i> command</li>
+	<li>added the possibility to ignore "dot" and "dotdot" directory entries in MS-DOS</li>
+	<li>added the <i>Image &#8594; Patch</i> command to "patch" an existing image (<a href="faq_patch.html">see how and why</a>)</li>
+	<li>added on-line testing of application recency (<i>Help &#8594; Check for Updates</i>)</li>
+	<li>improved usability on Windows 10 (Windows 8.x still untested)</li>
+	<li>other minor improvements</li>
+</ul>
+
+<h3>1.3.6 (Sep 16, 2017)</h3>
+<ul>	<li>fixed the stepping speed for MDOS drives</li>
+	<li>fixed MS-DOS functionality</li>
+	<li>improved the formatting of raw image (faster)</li>
+	<li>improved the formatting sequence of internal floppy drive</li>
+	<li>added reporting on bugs during dumping (as HTML page)</li>
+	<li>added possibility to recover bad sector data (by either correcting the CRC or replacing the bad content with substitute data)</li>
+	<li>added support for reproduction of these i/o floppy errors: <i>End of Cylinder</i>, <i>Missing Address Mark</i>, and <i>Missing DAM</i></li>
+	<li>added possibility to verify data written to the disk/image, including i/o errors reproduction</li>
+	<li>removed manual input of first sector number on a track in <i>Format Cylinder</i> dialog (can always be inferred automatically)</li>
+	<li>other minor improvements</li>
+</ul>
+
+<h3>1.3.5 (Jun 14, 2017)</h3>
+<ul>	<li>fixed marking of raw image sectors as "dirty"</li>
+	<li>improved unformatting of DSK image tracks (just cosmetic affairs, not functional)</li>
+	<li>added automatic determination of internal floppy drive latencies (first experimental version)</li>
+	<li>added basic web pages available through the <i>Help</i> menu</li>
+</ul>
+
+<h3>1.3.4 (May 20, 2017)</h3>
+<ul>	<li>fixed DSK image implementation (motivation: <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0000245">Arctic Fox</a>, <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0011645">DB1 Plus Three Disc Backup Utility</a>, <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0014992">Discology +3</a>, <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0002007">Gemini Wing</a>, and many others)</li>
+	<li>fixed the maximum number of ZX Spectrum files to 2048 (motivation: <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0000295">Astro Marine Corps</a>)</li>
+	<li>improved ZX Spectrum file export information to now contain the "universal type of file" (useful when porting files between ZX platforms)</li>
+	<li>improved the formatting sequence of internal floppy drive</li>
+	<li>added displaying of bad sector data in <i>Track Map</i></li>
+	<li>added dialog on internal floppy drive settings</li>
+	<li>added support for reproduction of these i/o floppy errors: <i>Deleted DAM</i>, <i>Data Field CRC Error</i>, and <i>Error in ID or Data Field</i></li>
+	<li>added support for duplicate sector IDs (motivation: <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0005520">The Untouchables</a>)</li>
+	<li>added support for reproduction of 8kB long sectors on 2DD floppies (motivation: <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0001699">Extreme</a>, <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0003399">The New Zealand Story</a>)</li>
+	<li>other minor improvements</li>
+</ul>
+
+<h3>1.3.3 (Mar 31, 2017)</h3>
+<ul>	<li>fixed allocation of contiguous cylinders in raw image (cannot leave a cylinder unformatted "in the middle")</li>
+	<li>fixed "Error 183" when rewriting an existing image</li>
+	<li>fixed processing of unavailable sectors during formatting/unformatting</li>
+	<li>fixed TRDOS disk defragmentation</li>
+	<li>fixed the <i>Image &#8594; Dump</i> action to correctly recognize and process single-sided images</li>
+	<li>improved the <i>Compare Files</i> dialog visuals in <i>Track Map</i></li>
+	<li>added support for "standard" DSK images (so far only "Revision 5" has been supported)</li>
+</ul>
+
+<h3>1.3.2 (Mar 18, 2017)</h3>
+<ul>	<li>improved transfer of files from and to the application</li>
+	<li>improved working with all kinds of images (creating/opening/formatting)</li>
+	<li>fixed creating of 128 Bytes long sectors in DSK image implementation</li>
+	<li>fixed working with multi-sector clusters in MS-DOS</li>
+	<li>fixed painting in the <i>Track Map</i></li>
+	<li>fixed importing of TRDOS files (and thus also fixed the SCL image)</li>
+	<li>added possibility to open DSK as raw image (motivation: <a href="http://oldcomp.cz/download/file.php?id=3913">this image</a> for Sharp MZ-100)</li>
+</ul>
+
+<h3>1.3.1 (Feb 4, 2017)</h3>
+<ul>	<li>fixed ZX Spectrum <i>Format Cylinders</i> dialog's <i>"Expand to…"</i> options</li>
+	<li>fixed importing of non-standard TRDOS files</li>
+	<li>fixed opening of image without extension</li>
+	<li>fixed MS-DOS short names production for newly imported files</li>
+	<li>improved TRDOS <i>File Manager</i> visual appearance</li>
+	<li>added labels and descriptions to each action and icon</li>
+	<li>fixed formatting/unformatting of MS-DOS cylinders to not overflow/underflow the limits of current FAT</li>
+	<li>fixed shortcut collisions</li>
+	<li>modified recognition of fresh formatted disk/image, now making no assuptions on the DOS that formatted it (fixes eventual crash if boot sector not formatted well)</li>
+	<li>fixed automatic refreshing of MDOS <i>File Manager</i> if switched to the "large icons" mode</li>
+	<li>fixed renaming of MDOS and TRDOS files in the "report" mode in <i>File Manager</i></li>
+	<li>fixed displaying of hard-disks in the <i>Track Map</i></li>
+	<li>fixed classifying of sectors "beyond" MS-DOS FAT table as "potentially empty"</li>
+	<li>other minor improvements</li>
+</ul>
+
+<h3>1.3 (Jan 14, 2017)</h3>
+<ul>	<li>fixed automatic refreshing of <i>File Manager</i> after modifying the list of files</li>
+	<li>added basic support for MS-DOS 7.1 (FAT12, FAT16, FAT32, and long file names)</li>
+</ul>
+
+<h3>1.2.6 (Dec 24, 2016)</h3>
+<ul>	<li>fixed automatic closing of the <i>Screen$</i> window once a ZX Spectrum tape has been closed</li>
+	<li>fixed DSK image implementation to support zero-length sectors (motivation: <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0005212">Tetris</a>)</li>
+	<li>added <i>Interleave</i>, <i>Skew</i>, and <i>Gap 3</i> parameters to the <i>Format Cylinder</i> dialog</li>
+	<li>fixed closing of image when a value is being edited in <i>PropertyGrid</i></li>
+</ul>
+
+<h3>1.2.5 (Nov 4, 2016)</h3>
+<ul>	<li>fixed marking of MDOS sectors as "dirty"</li>
+	<li>modified recognition of MDOS 1.0 images and floppies (more robust) + indication in the <i>File Manager</i> tab</li>
+	<li>fixed empty name of ZX Spectrum tape files (motivation: <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0004217">The Rocky Horrow Show</a>)</li>
+	<li>fixed synchronization of <i>Track Map</i>'s worker thread for the last cylinder on disk</li>
+	<li>added support for SCL images</li>
+	<li>modified recognition of ZX Spectrum file headers on only standard ones (motivation: <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0003833">Popeye 2</a>, and <a href="http://www.zx-spectrum.cz/index.php?cat1=3&cat2=3&game_id=djpuff.txt">DF Puff</a>)</li>
+	<li>added possibility to import zero-length TRDOS files (to "tweak" the file system)</li>
+	<li>added the <i>Advanced</i> category to TRDOS <i>Boot Sector</i> tab</li>
+	<li>fixed that TRDOS can officially have only 16 sectors per track</li>
+</ul>
+
+<h3>1.2.4 (Oct 1, 2016)</h3>
+<ul>	<li>added the <i>Block Flag</i> column into ZX Spectrum <i>File Manager</i> (motivation: <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0003399">The New Zealand Story</a>)</li>
+	<li>fixed working with ZX Spectrum tape images and files</li>
+	<li>fixed support of tracks with different sector lengths in DSK images (motivation: <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0005520">The Untouchables</a>, <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0000434">Batman</a>, and many other +3DOS images)</li>
+	<li>fixed synchronization of <i>Track Map</i>'s worker thread</li>
+	<li>added possibility to verify tracks in the <i>Image &#8594; Dump</i> action</li>
+</ul>
+
+<h3>1.2.4 Beta (Sep 24, 2016)</h3>
+<ul>	<li>fixed the <i>Please Wait</i> dialog</li>
+	<li>fixed backwards compatibility with MDOS 1.0 (formatting)</li>
+	<li>fixed recognition of MDOS floppies and disks</li>
+	<li>added optional reporting on low-level formatting</li>
+</ul>
+
+<h3>1.2.3 (Sep 17, 2016)</h3>
+<ul>	<li>fixed ZX Spectrum tape support</li>
+	<li>added possibility to edit parameters of ZX Spectrum tape files</li>
+	<li>fixed retrieval of TRDOS file parameters stored "after" data</li>
+	<li>added possibility to edit all variable parameters of TRDOS files</li>
+	<li>added padding of open images to whole cylinders (motivation: <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0012791">Crime Santa Claus</a> and <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0012775">Clickmania</a>)</li>
+	<li>fixed shortcut collisions</li>
+	<li>fixed reformatting of raw image cylinders (now resetting sector contents as expected)</li>
+	<li>fixed backwards compatibility with MDOS 1.0 (for floppies that are readable on PC)</li>
+</ul>
+
+<h3>1.2.2 (Aug 21, 2016)</h3>
+<ul>	<li>fixed opening of empty image without tracks</li>
+	<li>fixed ZX Spectrum file name editor displayed in the <i>File Manager</i></li>
+	<li>fixed displaying of single-sided images in the <i>Track Map</i></li>
+	<li>fixed memory leaking after cancelling the <i>Format Cylinders</i> dialog</li>
+	<li>fixed focusing in <i>PropertyGrid</i></li>
+	<li>fixed working with internal floppy drives</li>
+	<li>fixed displaying of cursor in hexa-editor</li>
+	<li>modified that initialized sectors of just formatted real floppy are immediatelly saved (before, <i>Ctrl+S</i> had to be pressed to explicitly save the changes)</li>
+</ul>
+
+<h3>1.2.1 (Jul 30, 2016)</h3>
+<ul>	<li>fixed the <i>Image &#8594; Dump</i> function, now can dump even if DOS unknown and/or medium ambiguous</li>
+	<li>added "consequence" to each error message (an impact that an error has on further processing)</li>
+</ul>
+
+<h3>1.2 (Jul 23, 2016)</h3>
+<ul>	<li>fixed the DSK image implementation</li>
+	<li>fixed the <i>PropertyGrid</i> control to not crash when open <i>ComboBox</i> looses the focus</li>
+	<li>fixed <i>Ctrl+F4</i> shortcut to close image</li>
+	<li>improved the <i>Image &#8594; Dump</i> function</li>
+</ul>
+
+<h3>1.2 Beta (May 29, 2016)</h3>
+<ul>	<li>added initial naive support for internal floppy drives using Simon Owen's <a href="http://simonowen.com/fdrawcmd">fdrawcmd</a> driver</li>
+</ul>
+
+<h3>1.1.3 (Apr 15, 2016)</h3>
+<ul>	<li>first version to be built against legacy MFC 4.2 :-) (motivation: application should run also on retro computers with internal floppy drives)</li>
+	<li>other minor improvements</li>
+</ul>
+
+<h3>1.1.2 (Mar 31, 2016)</h3>
+<ul>	<li>added hexa-editor to the <i>Boot Sector</i> tab</li>
+</ul>
+
+<h3>1.1 (Mar 13, 2016)</h3>
+<ul>	<li>improved the <i>Boot Sector</i> tab</li>
+	<li>fixed saving of zero-length files to ZX Spectrum tape</li>
+	<li>other minor improvements</li>
+</ul>
+
+<h3>1.1 Beta 2 (Mar 11, 2016)</h3>
+<ul>	<li>fixed TRDOS disk defragmentation</li>
+	<li>improved <i>File Manager</i></li>
+	<li>modified determination of TRDOS file sizes (motivation: <a href="http://www.worldofspectrum.org/infoseekid.cgi?id=0013107">Ufo 2</a>)</li>
+</ul>
+
+<h3>1.1 Beta 1 (Mar 10, 2016)</h3>
+<ul>	<li>added support for TRD images</li>
+	<li>added first implementation of TRDOS 5.03</li>
+	<li>improved exporting of all important parameters of ZX Spectrum files</li>
+	<li>other minor improvements</li>
+</ul>
+
+<h3>1.0 (Feb 22, 2016)</h3>
+<ul>	<li>fixed ejecting of ZX Spectrum tapes</li>
+	<li>fixed creating of new images</li>
+	<li>added comparision of files into the <i>File Manager</i></li>
+	<li>other minor improvements</li>
+</ul>
+
+<h3>1.0 RC2 (Feb 15, 2016)</h3>
+<ul>	<li>added support for ZX Spectrum tapes</li>
+	<li>added exporting of all important parameters about ZX Spectrum files (e.g., standard parameters)</li>
+	<li>fixed the <i>Format Cylinders</i> and <i>Unformat Cylinders</i> dialogs</li>
+</ul>
+
+<h3>1.0 RC1 (Feb 4, 2016)</h3>
+<ul>	<li>further bug-fixing</li>
+	<li>improved drag&drop operation for file transfer to and from the application</li>
+</ul>
+
+<h3>1.0 Beta 2 (Jan 26, 2016)</h3>
+<ul>	<li>known bugs fixed, but many at the time unknown bugs remain</li>
+</ul>
+
+<h3>1.0 Beta 1 (Jan 22, 2016)</h3>
+<ul>	<li>first public preview, limited functionality, tons of bugs</li>
+</ul>
+
+<h3>Summer 2015</h3>
+<ul>	<li>Created a new Visual Studio project. Those were the days! :-)</li>
+</ul>
+
